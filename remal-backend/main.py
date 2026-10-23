@@ -1,9 +1,10 @@
 # main.py
 from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
+from nodes import find_node
 from nodes import get_nodes
 from engine import calculate_match
 
