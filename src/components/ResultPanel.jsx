@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 const egp = (v) => `${Math.round(v).toLocaleString()} EGP`
 
 function Row({ label, base, remal, strong }) {
@@ -11,6 +13,38 @@ function Row({ label, base, remal, strong }) {
 }
 
 export default function ResultPanel({ result }) {
+  // State for Telegram driver dispatch
+  const [chatId, setChatId] = useState('')
+  const [dispatchStatus, setDispatchStatus] = useState('idle') // 'idle' | 'loading' | 'sent' | 'error'
+
+  const handleDispatch = async () => {
+    if (!result || !chatId.trim()) return
+
+    setDispatchStatus('loading')
+    try {
+      const res = await fetch('/api/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          driver_telegram_chat_id: Number(chatId.trim()),
+          match_result: result,
+        }),
+      })
+
+      if (res.ok) {
+        setDispatchStatus('sent')
+        setTimeout(() => setDispatchStatus('idle'), 5000)
+      } else {
+        setDispatchStatus('error')
+        setTimeout(() => setDispatchStatus('idle'), 4000)
+      }
+    } catch (err) {
+      console.error('Dispatch failed:', err)
+      setDispatchStatus('error')
+      setTimeout(() => setDispatchStatus('idle'), 4000)
+    }
+  }
+
   if (!result) {
     return (
       <p className="rounded-lg border border-dashed border-slate-700 p-4 text-sm text-slate-500">
@@ -23,13 +57,13 @@ export default function ResultPanel({ result }) {
   const tri = result.mode === 'triangular'
   const stops = tri
     ? [
-        ['Pickup', result.site.name, result.legs[0]?.km],
-        ['Drop rubble', result.plant.name, result.legs[1]?.km],
-        ['Deliver gravel', result.road.name, result.legs[2]?.km],
+        ['Pickup', result.site?.name || 'Demolition Site', result.legs[0]?.km],
+        ['Drop rubble', result.plant?.name || 'Crusher Plant', result.legs[1]?.km],
+        ['Deliver gravel', result.road?.name || 'Road Project', result.legs[2]?.km],
       ]
     : [
-        ['Pickup', result.site.name, result.legs[0]?.km],
-        ['Drop rubble', result.plant.name, null],
+        ['Pickup', result.site?.name || 'Demolition Site', result.legs[0]?.km],
+        ['Drop rubble', result.plant?.name || 'Crusher Plant', null],
       ]
 
   return (
@@ -104,9 +138,41 @@ export default function ResultPanel({ result }) {
         </div>
       )}
 
+      {/* Driver Dispatch Section via Telegram */}
+      <div className="mt-3 rounded-lg border border-slate-700/60 bg-slate-800/40 p-3 space-y-2">
+        <label className="block text-xs font-medium text-slate-300">
+          Driver Telegram Dispatch (No-App Interface)[cite: 14]
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            placeholder="Driver Telegram Chat ID (e.g. from @userinfobot)"
+            value={chatId}
+            onChange={(e) => setChatId(e.target.value)}
+            className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:border-amber-400 focus:outline-none"
+          />
+          <button
+            onClick={handleDispatch}
+            disabled={dispatchStatus === 'loading' || !chatId.trim()}
+            className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+              dispatchStatus === 'sent'
+                ? 'bg-emerald-600 text-white'
+                : dispatchStatus === 'error'
+                ? 'bg-rose-600 text-white'
+                : 'bg-amber-500 hover:bg-amber-400 text-slate-950 disabled:opacity-50'
+            }`}
+          >
+            {dispatchStatus === 'loading' && 'Dispatching...'}
+            {dispatchStatus === 'sent' && '✓ Dispatched to Telegram'}
+            {dispatchStatus === 'error' && '✕ Failed'}
+            {dispatchStatus === 'idle' && '📲 Dispatch Driver'}
+          </button>
+        </div>
+      </div>
+
       <p className="text-[11px] leading-snug text-slate-500">
         Modeled estimate: 35 EGP/km, 20 t trucks, road km = 1.3× straight-line, placeholder gate fees and gravel
-        prices. Not measured data.
+        prices[cite: 5, 8]. Not measured data[cite: 1, 8].
       </p>
     </div>
   )
