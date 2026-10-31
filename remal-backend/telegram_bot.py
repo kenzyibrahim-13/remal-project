@@ -2,7 +2,7 @@ import httpx
 from typing import Dict, Any
 
 # Replace with your token from @BotFather
-TELEGRAM_BOT_TOKEN = "8572100521:AAFm5QspuZlo-GFEUtt-o0qlhrlhH_L9_gA"
+TELEGRAM_BOT_TOKEN = #"insert token"
 BASE_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
 
 # In-memory storage for active demo trips
